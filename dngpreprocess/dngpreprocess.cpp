@@ -12,6 +12,7 @@
 
 void process(std::string rawFilename, std::string outFilename, std::string dcpFilename)
 {
+    /* Initialize Adobe DNG SDK */
     dng_xmp_sdk::InitializeSDK();
     dng_host host;
 
@@ -19,6 +20,7 @@ void process(std::string rawFilename, std::string outFilename, std::string dcpFi
     host.SetSaveLinearDNG(false);
     host.SetKeepOriginalFile(false);
 
+    /* Load the input DNG */
     dng_file_stream stream(rawFilename.c_str());
     dng_info info;
     info.Parse(host, stream);
@@ -30,9 +32,21 @@ void process(std::string rawFilename, std::string outFilename, std::string dcpFi
     negative->PostParse(host, stream, info);
     negative->ReadStage1Image(host, stream, info);
     negative->ValidateRawImageDigest(host);
+
+    /*
+     * Apply stage 1 and stage 2 processing. The black levels are subtracted 
+     * from the raw sensor values, and the values are converted to floating 
+     * point and scaled to the range 0 to 1. Then, the stage 2 opcodes 
+     * including the GainMap are applied. A floating point dng is output, and 
+     * the tags corresponding to any operations that were performed here (black 
+     * levels, opcodes) are removed.
+     */
     negative->OpcodeList2().SetAlwaysApply();
     negative->BuildStage2Image(host);
 
+    /* If a DCP file was specified, replace the input file's camera profile 
+     * with the profile from the DCP file.
+     */
     if (!dcpFilename.empty()) {
         AutoPtr<dng_camera_profile> prof(new dng_camera_profile);
         dng_file_stream profStream(dcpFilename.c_str());
@@ -58,9 +72,6 @@ int main(int argc, const char* argv []) {
                      "  -o <filename>        specify output filename\n\n";
         return -1;
     }
-
-    // -----------------------------------------------------------------------------------------
-    // Parse command line
 
     std::string outFilename;
     std::string dcpFilename;
