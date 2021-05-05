@@ -9,3 +9,4 @@ ADD_COMPILE_OPTIONS( -Wall )
 
 ADD_SUBDIRECTORY( libdng )
 ADD_SUBDIRECTORY( raw2dng )
+ADD_SUBDIRECTORY( dngpreprocess )
