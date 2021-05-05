@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string.h>
 
+#include <dng_camera_profile.h>
 #include <dng_file_stream.h>
 #include <dng_image_writer.h>
 #include <dng_info.h>
@@ -9,7 +10,7 @@
 #include <dng_xmp_sdk.h>
 #include <dnghost.h>
 
-void process(std::string rawFilename, std::string outFilename)
+void process(std::string rawFilename, std::string outFilename, std::string dcpFilename)
 {
     dng_xmp_sdk::InitializeSDK();
     dng_host host;
@@ -32,21 +33,43 @@ void process(std::string rawFilename, std::string outFilename)
     negative->OpcodeList2().SetAlwaysApply();
     negative->BuildStage2Image(host);
 
+    if (!dcpFilename.empty()) {
+        AutoPtr<dng_camera_profile> prof(new dng_camera_profile);
+        dng_file_stream profStream(dcpFilename.c_str());
+        if (!prof->ParseExtended(profStream)) {
+            throw std::runtime_error("Could not parse supplied camera profile file!");
+        }
+        negative->ClearProfiles();
+        negative->AddProfile(prof);
+    }
+
     dng_file_stream stream_out(outFilename.c_str(), true);
     dng_image_writer writer;
     writer.WriteDNG(host, stream_out, *negative.Get(), NULL, dngVersion_Current, false);
 }
 
 int main(int argc, const char* argv []) {  
+    if (argc == 1) {
+        std::cerr << "\n"
+                     "dngpreprocess - DNG preprocessor\n"
+                     "Usage: " << argv[0] << " [options] <rawfile>\n"
+                     "Valid options:\n"
+                     "  -dcp <filename>      use adobe camera profile\n"
+                     "  -o <filename>        specify output filename\n\n";
+        return -1;
+    }
+
     // -----------------------------------------------------------------------------------------
     // Parse command line
 
     std::string outFilename;
+    std::string dcpFilename;
 
     int index;
     for (index = 1; index < argc && argv [index][0] == '-'; index++) {
         std::string option = &argv[index][1];
         if (0 == strcmp(option.c_str(), "o"))   outFilename = std::string(argv[++index]);
+        if (0 == strcmp(option.c_str(), "dcp")) dcpFilename = std::string(argv[++index]);
     }
 
     if (index == argc) {
@@ -62,7 +85,7 @@ int main(int argc, const char* argv []) {
     }
 
     try {
-        process(rawFilename, outFilename);
+        process(rawFilename, outFilename, dcpFilename);
     }
     catch (std::exception& e) {
         std::cerr << "--> Error! (" << e.what() << ")\n\n";
