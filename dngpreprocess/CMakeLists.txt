@@ -14,7 +14,7 @@ ADD_EXECUTABLE( dngpreprocess
                 ${CMAKE_CURRENT_SOURCE_DIR}/dngpreprocess.cpp )
 
 TARGET_LINK_LIBRARIES( dngpreprocess dng ${ZLIB_LIBRARIES} )
-TARGET_COMPILE_OPTIONS( raw2dng PRIVATE -fexceptions -std=c++11 )
+TARGET_COMPILE_OPTIONS( dngpreprocess PRIVATE -fexceptions -std=c++11 )
 
 INSTALL(TARGETS dngpreprocess DESTINATION bin)
 
