@@ -10,7 +10,7 @@
 #include <dng_xmp_sdk.h>
 #include <dnghost.h>
 
-void process(std::string rawFilename, std::string outFilename, std::string dcpFilename)
+void process(std::string rawFilename, std::string outFilename, std::string dcpFilename, bool doOpcodeList3)
 {
     /* Initialize Adobe DNG SDK */
     dng_xmp_sdk::InitializeSDK();
@@ -33,16 +33,21 @@ void process(std::string rawFilename, std::string outFilename, std::string dcpFi
     negative->ReadStage1Image(host, stream, info);
     negative->ValidateRawImageDigest(host);
 
-    /*
-     * Apply stage 1 and stage 2 processing. The black levels are subtracted 
-     * from the raw sensor values, and the values are converted to floating 
-     * point and scaled to the range 0 to 1. Then, the stage 2 opcodes 
-     * including the GainMap are applied. A floating point dng is output, and 
-     * the tags corresponding to any operations that were performed here (black 
-     * levels, opcodes) are removed.
-     */
-    negative->OpcodeList2().SetAlwaysApply();
-    negative->BuildStage2Image(host);
+    if (doOpcodeList3) {
+        negative->OpcodeList2().SetAlwaysApply();
+        negative->OpcodeList3().SetAlwaysApply();
+        negative->BuildStage2Image(host);
+        negative->BuildStage3Image(host);
+    } else {
+        /* Apply stage 1 and stage 2 processing. The black levels are subtracted
+         * from the raw sensor values, and the values are scaled according to the
+         * white level. Then, the stage 2 opcodes including the GainMap are
+         * applied. A dng is output, and the tags corresponding to any operations
+         * that were performed here (black levels, opcodes) are removed.
+         */
+        negative->OpcodeList2().SetAlwaysApply();
+        negative->BuildStage2Image(host);
+    }
 
     /* If a DCP file was specified, replace the input file's camera profile 
      * with the profile from the DCP file.
@@ -68,6 +73,7 @@ int main(int argc, const char* argv []) {
                      "dngpreprocess - DNG preprocessor\n"
                      "Usage: " << argv[0] << " [options] <rawfile>\n"
                      "Valid options:\n"
+                     "  -3                   demosaic and do OpcodeList3 processing\n"
                      "  -dcp <filename>      use adobe camera profile\n"
                      "  -o <filename>        specify output filename\n\n";
         return -1;
@@ -75,12 +81,14 @@ int main(int argc, const char* argv []) {
 
     std::string outFilename;
     std::string dcpFilename;
+    bool doOpcodeList3 = false;
 
     int index;
     for (index = 1; index < argc && argv [index][0] == '-'; index++) {
         std::string option = &argv[index][1];
         if (0 == strcmp(option.c_str(), "o"))   outFilename = std::string(argv[++index]);
         if (0 == strcmp(option.c_str(), "dcp")) dcpFilename = std::string(argv[++index]);
+        if (0 == strcmp(option.c_str(), "3"))   doOpcodeList3 = true;
     }
 
     if (index == argc) {
@@ -96,7 +104,7 @@ int main(int argc, const char* argv []) {
     }
 
     try {
-        process(rawFilename, outFilename, dcpFilename);
+        process(rawFilename, outFilename, dcpFilename, doOpcodeList3);
     }
     catch (std::exception& e) {
         std::cerr << "--> Error! (" << e.what() << ")\n\n";
