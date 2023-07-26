@@ -38,6 +38,7 @@ ADD_LIBRARY( dng-sdk STATIC
              ${CMAKE_CURRENT_SOURCE_DIR}/source/dng_info.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/source/dng_iptc.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/source/dng_jpeg_image.cpp
+             ${CMAKE_CURRENT_SOURCE_DIR}/source/dng_jpeg_memory_source.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/source/dng_lens_correction.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/source/dng_linearization_info.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/source/dng_local_string.cpp
@@ -88,7 +89,7 @@ TARGET_COMPILE_DEFINITIONS( dng-sdk PUBLIC
                             -DqDNGThreadSafe=1                 # we're thread-safe - will use pthreads
 #                           -DqDNG64Bit=1                      # set manually to support 64bit platforms (todo: add test)
                             -DqDNGDebug=0                      # do not compile debug code
-                            -DqDNGValidateTarget=0             # do not build dng_validate-binary
+                            -DqDNGValidateTarget=1             # do not build dng_validate-binary
                             -DqDNGUseLibJPEG=1                 # use libjpeg
                             -DqDNGXMPFiles=0 -DqDNGXMPDocOps=0 # build minimal XMP-set
                             -DqDNGUseStdInt=1 )                # Must be set to 1, else do not compile under Linux.
